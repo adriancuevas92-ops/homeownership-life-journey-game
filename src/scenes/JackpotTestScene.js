@@ -12,6 +12,19 @@ class JackpotTestScene extends Phaser.Scene {
   }
 
   create() {
+    // Set at the start, not in _showResults() — found live during a
+    // player audit (2026-09-21): with the flag only set on completion, a
+    // player could answer a few questions, realize it was going badly,
+    // and abandon (refresh/navigate away) before finishing. The flag
+    // never flipped, autosave/resume dropped them back into a freshly
+    // shuffled attempt, and CareerAdvancementScene's hotspot still
+    // offered "Try for the jackpot" again — an unlimited-retries loophole
+    // in the one specific mechanic the game narrates as deliberately
+    // rare and non-repeatable. Setting it here means the "one shot" is
+    // spent the moment the attempt begins, matching what the screen
+    // itself already tells the player ("no retry") before they answer
+    // anything.
+    GameState.hasAttemptedJackpotTest = true;
     this.test = JackpotTest.buildTest(GameState, BANK);
     this.currentIndex = 0;
     this.answers = [];
@@ -72,7 +85,6 @@ class JackpotTestScene extends Phaser.Scene {
     this._clearScreen();
     const { width, height } = this.scale;
     const result = JackpotTest.scoreTest(this.test, this.answers);
-    GameState.hasAttemptedJackpotTest = true;
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x14181f);
 

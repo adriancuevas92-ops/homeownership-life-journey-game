@@ -1,3 +1,13 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# Raw/unprocessed art-generation intermediates (chroma-key inputs,
+# rejected variants) — not referenced by any game code, just the
+# pre-processed source of what already lives in assets/images/*.png.
+# ~73MB, no reason to ship it with the deployed site or the repo.
+assets/images/_raw/
+
+# Python bytecode cache from the one-off art-generation scripts.
+scripts/__pycache__/
+*.pyc

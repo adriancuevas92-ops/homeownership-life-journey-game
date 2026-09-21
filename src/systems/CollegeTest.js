@@ -21,12 +21,15 @@ import StructuralDrag from './StructuralDrag.js';
 //
 // [V] UC Davis Center for Poverty & Inequality Research: 14.7% of
 // undocumented adults hold a bachelor's degree or higher, versus 28%+ of
-// all U.S. adults — roughly half the attainment rate. Every character in
-// this game carries that same documentation-status special circumstance
-// (SpecialCircumstanceScene), so it isn't one of the three variable
-// Structural Drag signals; it's folded into BASE_PASS_THRESHOLD itself
-// (7 of 10 — already harder than a 50/50 bar) rather than re-counted per
-// playthrough.
+// all U.S. adults — roughly half the attainment rate. Originally the
+// justification for BASE_PASS_THRESHOLD when documentation status was
+// every character's circumstance; that stopped being universally true
+// once black-1986 (2026-09-20) gave a second archetype a different
+// circumstance. Left at 7 of 10 anyway — still a reasonable "harder than
+// a coin flip" baseline on its own terms, not specifically re-justified
+// per archetype yet. Folded into BASE_PASS_THRESHOLD rather than one of
+// the three variable Structural Drag signals either way, so it isn't
+// re-counted per playthrough.
 //
 // Each failed attempt drops the bar by one question, floored at
 // MIN_PASS_THRESHOLD — [E] design simplification: persistence lowering
@@ -66,10 +69,17 @@ function shuffle(array) {
   return copy;
 }
 
+// collegeTestBank.js lists every answer as its first choice by authoring
+// convention — this is what actually randomizes presentation order.
+// `answer` is matched by value in scoreTest(), never by index.
+function shuffleChoices(question) {
+  return { ...question, choices: shuffle(question.choices) };
+}
+
 // `bank` is injected, same reasoning as SchoolTest.buildTest — easy to
 // unit-test against a small fake pool instead of the full curated one.
 function buildTest(bank) {
-  return { questions: shuffle(bank).slice(0, QUESTION_COUNT) };
+  return { questions: shuffle(bank).slice(0, QUESTION_COUNT).map(shuffleChoices) };
 }
 
 function scoreTest(test, answers, threshold) {

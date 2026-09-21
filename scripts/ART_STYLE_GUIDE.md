@@ -93,13 +93,30 @@ modern digital painting, not photorealism.
 
 ## Filename convention
 
-`avatar_<gender>_<variant>_<frame>.png` — `<gender>` is `male` or
-`female`; `<variant>` is empty-string (young-adult default, Level 2
+`avatar_<gender>_<race>_<variant>_<frame>.png` — `<gender>` is `male` or
+`female`; `<race>` is empty-string for `latino` (the archetype's original,
+already-shipped sprite set) or `white`/`black`/`asian` for the race sweep
+(2026-09-20); `<variant>` is empty-string (young-adult default, Level 2
 start), `child` (Level 1), `final` (older civilian, Level 3), or
 `military` (veteran uniform, Level 3); `<frame>` is `1` or `2`. Backdrops:
 `overworld_<screenKey>.png` matching the screen's `key` in
 `overworldScreens.js`, or a descriptive name for a non-overworld backdrop
 (`packinghouse_floor.png`, `adulthood_millennium.png`).
+
+## Backdrop generation specifically
+
+No chroma-key, no dual walk-frames — a backdrop is one opaque full-frame
+illustration (2048x2048, same model/params as sprites), saved straight to
+`assets/images/overworld_<screenKey>.png` and vault-copied same as any
+other asset. `overworld_realty_la.png` (RealtyLA screen, 2026-09-20) is
+the reference example: same Level 3 storefront composition as the
+existing `overworld_realty.png` (Fresno) — small office, "FOR SALE"
+window sign, one parked car, golden-hour sky — but with a distant
+downtown-LA high-rise skyline on the horizon and taller, sparser palm
+trees, so the two read as different cities at a glance without breaking
+the shared style. If this project ever needs a third city, reuse that
+pattern: keep the composition and staging identical, change only the
+skyline/architecture/signage details that actually signal "which city."
 
 ## Known pitfalls (all real, all already hit once)
 

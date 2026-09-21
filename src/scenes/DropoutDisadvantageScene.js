@@ -7,7 +7,7 @@
 // curve (PackingHouse.computeBeltSpeed) differ from here on.
 const STATS_TEXT = [
   'Householders with a high school diploma: 32.3% own their home. Without one: 23.0%. That gap is the one you just chose to carry.',
-  "A bachelor's degree adds another 10 points on top of a dropout's odds — 13 points, all told, between where you're starting and where a diploma alone would have put you.",
+  "A bachelor's degree adds another 10 points on top of a dropout's odds — a diploma alone would already have put you about 9 points ahead of where you're starting.",
   "None of the choices ahead undo the disadvantage already stacked against you. They just set how steep the next climb is — and this one starts steeper.",
 ].join('\n\n');
 

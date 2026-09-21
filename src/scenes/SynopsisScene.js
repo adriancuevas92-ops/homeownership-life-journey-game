@@ -1,4 +1,5 @@
 import GameState from '../systems/GameState.js';
+import CHARACTERS from '../data/characters/index.js';
 
 // Rewritten from a narrative bio into something closer to a rule book —
 // the mechanical facts governing this playthrough, not a story. Draws
@@ -21,12 +22,16 @@ const RACE_LABELS = { white: 'WHITE', black: 'BLACK', latino: 'LATINO', asian: '
 // it's rolled independently of documentation status, income, or any of
 // the other rules above it.
 function buildRules(state) {
+  // The first block used to be hardcoded here — always the Latino
+  // archetype's amnesty/DACA/banking-lockout facts, regardless of which
+  // archetype was actually active (a real gap: this page never adjusted
+  // when the Black archetype was built). Each archetype now owns its own
+  // `synopsisRules` array (same shape, same ALL-CAPS rule-bullet
+  // convention) in its own data file; this page just renders whichever
+  // one is active, same pattern EndingScene's homeTiers already uses.
+  const archetype = CHARACTERS[state.archetypeId];
   const rules = [
-    'BORN 1981. ARRIVED FRESNO, CALIFORNIA, 1986 — THREE YEARS AFTER THE CUTOFF FOR THE ONE AMNESTY LAW THAT COULD HAVE CHANGED EVERYTHING BELOW.',
-    'STATUS — UNDOCUMENTED UNTIL DACA, 2012. THIS IS THE HINGE MOST OF THE OTHER RULES SWING ON.',
-    'INCOME — REDUCED BY A REAL, DOCUMENTED WAGE PENALTY UNTIL WORK AUTHORIZATION ARRIVES.',
-    'CREDIT — LOCKED OUT OF MAINSTREAM BANKING FOR MOST OF EARLY ADULTHOOD. SAVINGS DON’T BUILD A CREDIT HISTORY THE WAY THEY WOULD FOR A BANKED HOUSEHOLD.',
-    'MARRIAGE — BEFORE 2013, MARRYING A U.S. CITIZEN DID NOT FIX THIS. IT MEANT A REAL LEGAL RISK INSTEAD.',
+    ...archetype.synopsisRules,
     `RACE — ${RACE_LABELS[state.race] || 'UNSET'}. A SEPARATE RULE, NOT CAUSED BY ANY OF THE ABOVE. THIS ONE WOULD HAVE APPLIED REGARDLESS.`,
     `SETTING — ${state.isRural ? 'FRESNO. RURAL CALIFORNIA, AGRICULTURAL AS MUCH AS URBAN.' : 'LOS ANGELES INSTEAD OF FRESNO. BIGGER CITY, BIGGER PRICES.'}`,
   ];
@@ -36,7 +41,8 @@ function buildRules(state) {
   if (state.hasDisability) {
     rules.push('DISABILITY — ONE MORE REAL RULE, NOT CAUSED BY ANY ABOVE IT: LOWER ODDS OF WORKING AT ALL, LOWER PAY WHEN WORKING.');
   }
-  rules.push('THIS IS NOT A DIFFICULTY SETTING. IT’S THE DOCUMENTED EXPERIENCE OF MILLIONS OF FAMILIES WHO ARRIVED THE SAME YEAR YOURS DID.');
+  rules.push('CIRCUMSTANCE — EVERYTHING ABOVE DOESN’T JUST COLOR THE STORY AHEAD. IT CAN MAKE WHAT’S AHEAD HARDER, TOO.');
+  rules.push('THIS IS NOT A DIFFICULTY SETTING. IT’S THE DOCUMENTED EXPERIENCE OF MILLIONS OF FAMILIES LIVING THROUGH THE SAME YEARS YOURS DID.');
   return rules.join('\n');
 }
 
@@ -49,7 +55,10 @@ class SynopsisScene extends Phaser.Scene {
     // Reuses the overworld walk-cycle's first frame as a standing portrait
     // rather than generating a dedicated pose — a mid-stride comic-style
     // pose still reads fine as a character reveal.
-    this.avatarKey = `avatar_${GameState.character}_1`;
+    // 'latino' stays unsuffixed — the archetype's original, already-shipped
+    // sprite set (same convention OverworldScene.preload uses).
+    const raceInfix = (GameState.race && GameState.race !== 'latino') ? `_${GameState.race}` : '';
+    this.avatarKey = `avatar_${GameState.character}${raceInfix}_1`;
     if (!this.textures.exists(this.avatarKey)) {
       this.load.image(this.avatarKey, `assets/images/${this.avatarKey}.png`);
     }

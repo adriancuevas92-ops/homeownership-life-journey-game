@@ -1,5 +1,5 @@
 import GameState from '../systems/GameState.js';
-import CHARACTERS from '../data/characters/index.js';
+import CHARACTERS, { ARCHETYPE_BY_RACE } from '../data/characters/index.js';
 import Demographics from '../systems/Demographics.js';
 
 // Staging-only dev tool: a persistent scene launched once at boot alongside
@@ -104,6 +104,14 @@ class DebugOverlayScene extends Phaser.Scene {
   }
 
   _setCharacter(character) {
+    // Same flow as CharacterSelectScene now: race rolls first (which
+    // archetype-linked story this run is even in) since it determines
+    // which archetype's gender/income table applies, then disability/
+    // rurality roll on top of that. Re-rolls race on every "Set Male"/
+    // "Set Female" click same as before — that's the point for QA, so
+    // both archetypes are reachable from this menu without a page reload.
+    GameState.race = Demographics.rollArchetypeRace();
+    GameState.archetypeId = ARCHETYPE_BY_RACE[GameState.race];
     const archetype = CHARACTERS[GameState.archetypeId];
     GameState.character = character;
     GameState.annualIncome = archetype.genders[character].annualIncome;
@@ -124,7 +132,7 @@ class DebugOverlayScene extends Phaser.Scene {
       GameState.isRural ? 'rural' : null,
     ].filter(Boolean).join(', ');
     this.hintText.setText(
-      `Character: ${GameState.character || '(none — set one before jumping)'}   Income: $${GameState.annualIncome || 0}   [${traits}]   [ \` to close ]`,
+      `Character: ${GameState.character || '(none — set one before jumping)'}   Archetype: ${GameState.archetypeId || '(none)'}   Income: $${GameState.annualIncome || 0}   [${traits}]   [ \` to close ]`,
     );
   }
 

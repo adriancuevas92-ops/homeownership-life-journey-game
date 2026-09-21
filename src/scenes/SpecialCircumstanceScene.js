@@ -9,6 +9,22 @@ import CHARACTERS from '../data/characters/index.js';
 // direction: the female wage-gap compounding is NOT called out here —
 // it's baked into the mechanics (CharacterSelectScene's income split,
 // the Ending's affordability table) rather than stated on its own screen.
+// Per-archetype back/continue routing — the intro-conversation scene to
+// return to, and the circumstance-origin scene (if any) to continue
+// into. latino-1986 has no circumstance-origin scene (no equivalent
+// exists for it), so its CONTINUE_SCENE_BY_ARCHETYPE entry is simply
+// absent and falls through to the DemographicContext default below.
+const BACK_SCENE_BY_ARCHETYPE = {
+  'black-1986': 'IntroConversationBlack',
+  'white-1986': 'IntroConversationWhite',
+  'asian-1986': 'IntroConversationAsian',
+};
+const CONTINUE_SCENE_BY_ARCHETYPE = {
+  'black-1986': 'CircumstanceOriginBlack',
+  'white-1986': 'CircumstanceOriginWhite',
+  'asian-1986': 'CircumstanceOriginAsian',
+};
+
 class SpecialCircumstanceScene extends Phaser.Scene {
   constructor() {
     super('SpecialCircumstance');
@@ -45,7 +61,7 @@ class SpecialCircumstanceScene extends Phaser.Scene {
     }).setOrigin(0, 1).setInteractive({ useHandCursor: true });
     this.backButton.on('pointerdown', (pointer, x, y, event) => {
       event.stopPropagation();
-      this.scene.start('IntroConversation');
+      this.scene.start(BACK_SCENE_BY_ARCHETYPE[GameState.archetypeId] || 'IntroConversation');
     });
 
     this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).on('down', () => this._continue());
@@ -53,7 +69,11 @@ class SpecialCircumstanceScene extends Phaser.Scene {
   }
 
   _continue() {
-    this.scene.start('DemographicContext');
+    // Archetypes with their own "how it happened" beat right after this
+    // one route there; latino-1986 has no equivalent circumstance-origin
+    // scene, so it goes straight to DemographicContext same as before
+    // any archetype had one.
+    this.scene.start(CONTINUE_SCENE_BY_ARCHETYPE[GameState.archetypeId] || 'DemographicContext');
   }
 }
 

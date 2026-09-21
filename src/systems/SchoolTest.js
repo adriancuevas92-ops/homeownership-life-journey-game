@@ -33,6 +33,13 @@ function shuffle(array) {
   return copy;
 }
 
+// schoolTestBank.js lists every answer as its first choice by authoring
+// convention — this is what actually randomizes presentation order.
+// `answer` is matched by value in scoreTest(), never by index.
+function shuffleChoices(question) {
+  return { ...question, choices: shuffle(question.choices) };
+}
+
 function drawQuestions(pool, count, subject) {
   return shuffle(pool).slice(0, count).map((q) => ({ ...q, subject }));
 }
@@ -44,7 +51,7 @@ function buildTest(state, bank) {
   const gradeBank = bank[gradeLevel];
   const math = drawQuestions(gradeBank.math, QUESTION_COUNT_PER_SUBJECT, 'math');
   const spelling = drawQuestions(gradeBank.spelling, QUESTION_COUNT_PER_SUBJECT, 'spelling');
-  return { gradeLevel, questions: shuffle([...math, ...spelling]) };
+  return { gradeLevel, questions: shuffle([...math, ...spelling]).map(shuffleChoices) };
 }
 
 function scoreTest(test, answers) {

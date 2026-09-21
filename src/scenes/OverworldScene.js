@@ -36,7 +36,10 @@ class OverworldScene extends Phaser.Scene {
       ? this.config.avatarVariant(GameState)
       : this.config.avatarVariant;
     const variantSuffix = variant ? `_${variant}` : '';
-    this.avatarKeys = [1, 2].map((n) => `avatar_${GameState.character}${variantSuffix}_${n}`);
+    // 'latino' stays unsuffixed — it's the archetype's original, already-shipped
+    // sprite set (scripts/gen_avatar.py's filename_key uses the same convention).
+    const raceInfix = (GameState.race && GameState.race !== 'latino') ? `_${GameState.race}` : '';
+    this.avatarKeys = [1, 2].map((n) => `avatar_${GameState.character}${raceInfix}${variantSuffix}_${n}`);
     this.avatarKeys.forEach((key) => {
       if (!this.textures.exists(key)) {
         this.load.image(key, `assets/images/${key}.png`);
@@ -76,7 +79,47 @@ class OverworldScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.interactKey.on('down', () => this._onInteractPressed());
 
+    // Phaser's own device detection, not a new dependency. Keyboard-only
+    // input left every touch device stuck the moment it reached the first
+    // overworld screen — nothing here does anything on a mouse/keyboard
+    // session (the block never renders), so desktop is unaffected.
+    this.touchState = { left: false, right: false, up: false, down: false };
+    this.isTouchDevice = this.sys.game.device.input.touch;
+    if (this.isTouchDevice) this._buildTouchControls();
+
     this.overlappingHotspot = null;
+  }
+
+  // Four hold-to-move direction buttons (bottom-left) plus one interact
+  // button (bottom-right) — same hold/tap semantics as a held arrow key
+  // or a SPACE tap, just routed through touchState instead of Phaser's
+  // keyboard plugin. Deliberately simple shapes/glyphs, not art assets —
+  // this is a control, not a backdrop.
+  _buildTouchControls() {
+    const { width, height } = this.scale;
+    const make = (x, y, label, onDown, onUp) => {
+      const box = this.add.rectangle(x, y, 56, 56, 0x000000, 0.35)
+        .setStrokeStyle(2, 0xf4ecd8, 0.6)
+        .setInteractive({ useHandCursor: true })
+        .setDepth(200)
+        .setScrollFactor(0);
+      const text = this.add.text(x, y, label, {
+        fontFamily: 'Georgia, serif', fontSize: '22px', color: '#f4ecd8',
+      }).setOrigin(0.5).setDepth(201).setScrollFactor(0);
+      box.on('pointerdown', onDown);
+      box.on('pointerup', onUp);
+      box.on('pointerout', onUp);
+      return { box, text };
+    };
+
+    const padX = 70;
+    const padY = height - 100;
+    make(padX, padY - 60, '▲', () => { this.touchState.up = true; }, () => { this.touchState.up = false; });
+    make(padX, padY + 60, '▼', () => { this.touchState.down = true; }, () => { this.touchState.down = false; });
+    make(padX - 60, padY, '◄', () => { this.touchState.left = true; }, () => { this.touchState.left = false; });
+    make(padX + 60, padY, '►', () => { this.touchState.right = true; }, () => { this.touchState.right = false; });
+
+    make(width - 60, height - 60, 'OK', () => this._onInteractPressed(), () => {});
   }
 
   _buildPlayer(data) {
@@ -158,10 +201,10 @@ class OverworldScene extends Phaser.Scene {
     let vx = 0;
     let vy = 0;
 
-    if (this.cursors.left.isDown || this.wasd.A.isDown) vx -= 1;
-    if (this.cursors.right.isDown || this.wasd.D.isDown) vx += 1;
-    if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1;
-    if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1;
+    if (this.cursors.left.isDown || this.wasd.A.isDown || this.touchState.left) vx -= 1;
+    if (this.cursors.right.isDown || this.wasd.D.isDown || this.touchState.right) vx += 1;
+    if (this.cursors.up.isDown || this.wasd.W.isDown || this.touchState.up) vy -= 1;
+    if (this.cursors.down.isDown || this.wasd.S.isDown || this.touchState.down) vy += 1;
 
     const isMoving = vx !== 0 || vy !== 0;
 
@@ -215,7 +258,8 @@ class OverworldScene extends Phaser.Scene {
     }
 
     this.overlappingHotspot = hotspot;
-    this.tooltipText.setText(`${hotspot.label} — press SPACE`)
+    const interactHint = this.isTouchDevice ? 'tap OK' : 'press SPACE';
+    this.tooltipText.setText(`${hotspot.label} — ${interactHint}`)
       .setPosition(this.player.x, this.player.y - this.player.displayHeight - 10)
       .setVisible(true);
     this.tooltipBg.setPosition(this.tooltipText.x, this.tooltipText.y + 4)

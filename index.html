@@ -8,7 +8,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
 <style>
   body { margin: 0; background: #0a0a0a; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-  #game { box-shadow: 0 0 0 2px #333; }
+  /* Gives Phaser's Scale.FIT mode a real box to scale into — bounded on
+     desktop so it doesn't blow up to a huge blurry canvas, full-viewport
+     on a phone so FIT can shrink the 4:3 game down with minimal
+     letterboxing instead of the browser doing it arbitrarily. */
+  #game { width: 100vw; height: 100vh; max-width: 1000px; max-height: 750px; box-shadow: 0 0 0 2px #333; }
 </style>
 </head>
 <body>

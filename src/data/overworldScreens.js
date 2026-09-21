@@ -128,7 +128,14 @@ const screens = [
         label: 'Recruiting Station',
         box: { x: 1190, y: 840, width: 320, height: 910 },
         targetType: 'narrative',
-        targetKey: 'MilitaryStats',
+        // latino-1986 specific: undocumented until DACA (2012), well
+        // after this Level 2 choice (AdulthoodWorld1's "turn of the
+        // millennium") — standard enlistment has always required
+        // citizenship or lawful permanent residency. See
+        // MilitaryBlockedScene.js's own header for the full sourcing.
+        // Every other archetype's own circumstance doesn't touch
+        // documentation status, so they keep the original destination.
+        targetKey: (state) => (state.archetypeId === 'latino-1986' ? 'MilitaryBlocked' : 'MilitaryStats'),
       },
       {
         id: 'property-management',
@@ -190,13 +197,47 @@ const screens = [
       {
         id: 'realty-office',
         label: 'Valley Realty',
-        // Door only, not the whole storefront — the player spawns at the
-        // left edge (see KitchenTablePreEndingScene's _continue) and has
-        // to actually walk across the sidewalk to reach it. y-range
-        // matches this screen's own walkY/walkYMin/walkYMax band above,
-        // not the shared default (native-coordinate math, not a straight
-        // eyeball guess, since the walk band sits well below FresnoHigh's).
-        box: { x: 1080, y: 1500, width: 320, height: 260 },
+        // Regenerated backdrop (2026-09-20, dropped the two baked-in
+        // listing prices that contradicted the game's real computed
+        // Fresno price — see ART_STYLE_GUIDE.md) is a wider receding-
+        // street composition than the original tight storefront shot, so
+        // the door sits higher in frame — measured via PIL crop at
+        // roughly x:1434-1514, y:951-1336 native. Box extends well below
+        // that down to this screen's own walkY (native ~1638, per
+        // walkY=540 above through the same cover-fit math every screen
+        // uses) so the avatar's fixed walk line still falls inside it —
+        // same generous-hitzone convention Downtown/Business already use.
+        box: { x: 1400, y: 900, width: 200, height: 800 },
+        targetType: 'narrative',
+        targetKey: 'Ending',
+      },
+    ],
+  },
+  {
+    // LA's counterpart to Realty — same role (Level 3's terminal stage,
+    // one hotspot into Ending), different backdrop. Whichever one the
+    // player actually lands on is picked once, by GameState.isRural, in
+    // KitchenTablePreEndingScene._continue(); a player never sees both
+    // in the same run. Kept as its own screen rather than a texture swap
+    // on the existing Realty entry so DebugOverlayScene's scene list
+    // (which reads the live registry, not a hand-maintained one) can
+    // still jump straight to either for QA regardless of a roll.
+    key: 'RealtyLA',
+    backdrop: 'overworld_realty_la',
+    avatarVariant: (state) => (state.isVeteran ? 'military' : 'final'),
+    avatarHeight: 240,
+    walkY: 540,
+    walkYMin: 500,
+    walkYMax: 570,
+    edges: { left: null, right: null },
+    hotspots: [
+      {
+        id: 'realty-office',
+        label: 'Pacific Realty',
+        // Measured directly off overworld_realty_la.png (PIL crop, not a
+        // plain eyeball guess) — the door sits noticeably higher/taller
+        // in this backdrop's framing than Realty's own box above.
+        box: { x: 985, y: 900, width: 180, height: 430 },
         targetType: 'narrative',
         targetKey: 'Ending',
       },

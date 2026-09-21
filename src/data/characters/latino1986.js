@@ -66,4 +66,18 @@ export default {
   ],
 
   specialCircumstanceText: CIRCUMSTANCE_TEXT,
+
+  // SynopsisScene's "rules of this run" page — the archetype-specific
+  // block, rendered before the shared RACE/SETTING/GENDER/DISABILITY/
+  // CIRCUMSTANCE lines every archetype gets. Moved out of SynopsisScene
+  // itself (2026-09-20) once a second archetype existed and that page
+  // turned out to still be hardcoded to this one's facts regardless of
+  // which archetype was actually active.
+  synopsisRules: [
+    'BORN 1981. ARRIVED FRESNO, CALIFORNIA, 1986 — THREE YEARS AFTER THE CUTOFF FOR THE ONE AMNESTY LAW THAT COULD HAVE CHANGED EVERYTHING BELOW.',
+    'STATUS — UNDOCUMENTED UNTIL DACA, 2012. THIS IS THE HINGE MOST OF THE OTHER RULES SWING ON.',
+    'INCOME — REDUCED BY A REAL, DOCUMENTED WAGE PENALTY UNTIL WORK AUTHORIZATION ARRIVES.',
+    'CREDIT — LOCKED OUT OF MAINSTREAM BANKING FOR MOST OF EARLY ADULTHOOD. SAVINGS DON’T BUILD A CREDIT HISTORY THE WAY THEY WOULD FOR A BANKED HOUSEHOLD.',
+    'MARRIAGE — BEFORE 2013, MARRYING A U.S. CITIZEN DID NOT FIX THIS. IT MEANT A REAL LEGAL RISK INSTEAD.',
+  ],
 };

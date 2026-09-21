@@ -47,6 +47,14 @@ const GameState = {
   hasAttemptedCollegeAdvancement: false,
   hasAttemptedCareerMove: false,
   hasAttemptedJackpotTest: false,
+  // CollegeTestScene's own "persistence counts here too" progression —
+  // the pass bar drops one question per failed attempt. Used to live on
+  // the scene instance (`this.attemptNumber`), which meant refreshing
+  // mid-retry-sequence reset it back to attempt 1's harder bar — the
+  // opposite of an exploit (it punishes a refreshing player, not
+  // rewards one), but still not what the screen's own text promises.
+  // Moved here so it survives a refresh the same way stepOutcomes does.
+  collegeTestAttemptNumber: 1,
 
   // Four general-condition modifiers, set once during the baseline 1986
   // world (Baseline1-3) and felt for the rest of the game — see Phaser
@@ -56,6 +64,22 @@ const GameState = {
   disruptionRateMultiplier: 1, // Baseline1: uneven recession recovery
   savingsRatePenalty: 0, // Baseline1: 1986 Tax Reform Act's renter penalty
   hasMainstreamCredit: true, // Baseline2: redlining-era credit-access gap
+
+  // Found live during a player audit (2026-09-21): ComicScene used to
+  // cache a roll/effect step's resolved text on the SCENE INSTANCE
+  // (`this.resolvedText`), which only guarantees "runs once" for as long
+  // as that one instance stays alive. Backing all the way out of a scene
+  // to its `previousScene` and returning spins up a brand-new instance
+  // with an empty cache — confirmed live to double- and triple-apply
+  // CircumstanceOriginBlack's `+=` penalty (0.02 -> 0.04 -> 0.06) just by
+  // bouncing SpecialCircumstance <-> CircumstanceOriginBlack a few times,
+  // and the same mechanism lets a `roll` step (Baseline2's credit-access
+  // roll, Baseline3's childhood-dependency roll) be re-rolled for a
+  // better outcome the same way. Fixed by moving the "has this exact
+  // step already resolved, and to what" record here, on GameState, keyed
+  // by `${sceneKey}:${stepIndex}` — survives a full scene teardown/
+  // rebuild, cleared only by a real new playthrough (reset()).
+  stepOutcomes: {},
 
   reset() {
     this.archetypeId = DEFAULT_CHARACTER_ID;
@@ -75,9 +99,11 @@ const GameState = {
     this.hasAttemptedCollegeAdvancement = false;
     this.hasAttemptedCareerMove = false;
     this.hasAttemptedJackpotTest = false;
+    this.collegeTestAttemptNumber = 1;
     this.disruptionRateMultiplier = 1;
     this.savingsRatePenalty = 0;
     this.hasMainstreamCredit = true;
+    this.stepOutcomes = {};
   },
 };
 

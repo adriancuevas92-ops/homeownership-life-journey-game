@@ -1,18 +1,18 @@
-// The demographic-attribute system, per direction: race, disability, and
-// rurality are each independently rolled onto a playthrough — on top of
-// the existing gender choice and archetype's fixed special circumstance,
-// not replacing them — with probabilities and effects grounded in real,
-// population-specific statistics, not flat/generic ones. "Randomly
-// attributed... or not at all" — each is an independent roll that can
-// come back false/absent.
+// The demographic-attribute system. Disability and rurality are each
+// independently rolled onto a playthrough — "randomly attributed... or
+// not at all," each roll can come back false/absent — and modify income
+// on top of whichever archetype's base the player is already in.
 //
-// Deliberately scoped this pass: the ROLLS and their INCOME effects are
-// real and wired in. What's NOT done yet (see the report back to the
-// user): narrative beats acknowledging what got rolled (no kitchen-table
-// -style reveal for race/disability/rurality the way Structural Drag
-// gets one), rural-specific home-price tiers (rurality only modifies
-// income here), and — the biggest one — no avatar art varies by race
-// yet. Flagged, not hidden.
+// Race is different as of 2026-09-20: it's rolled BEFORE archetype/
+// gender selection (see CharacterSelectScene.create()) via
+// rollArchetypeRace() below, and *is* the archetype selector now, not a
+// post-hoc modifier — "each race needs its own experience," not the
+// same story with different stats. rollRace()/RACE_WEIGHTS (the full,
+// real 4-race Census split) stay here as accurate reference data for
+// when a third/fourth archetype exists; rollArchetypeRace() is the one
+// CharacterSelectScene actually calls today, constrained to races that
+// have a built archetype behind them.
+import { ARCHETYPE_RACE_WEIGHTS } from '../data/characters/index.js';
 
 // [V] U.S. Census Bureau population estimates, 2024 (as reported):
 // White 57.5%, Hispanic/Latino 20.0%, Black 12.6%, Asian/Pacific
@@ -24,32 +24,6 @@ const RACE_WEIGHTS = {
   latino: 0.200 / 0.968,
   black: 0.126 / 0.968,
   asian: 0.067 / 0.968,
-};
-
-// [V] BLS Current Population Survey, median usual weekly earnings by
-// race/ethnicity and sex, Q1 2025 (bls.gov/news.release/wkyeng): White
-// men $1,342; Black men $1,017; Hispanic men $991; Asian men $1,822;
-// White women $1,103; Black women $984; Hispanic women $879; Asian women
-// $1,455. GameState.annualIncome's existing baseline (CharacterSelect ->
-// the archetype's `genders` entry) already IS the Hispanic/Latino figure
-// for this archetype (Fresno entry wage for men, Latina-vs-white-men
-// ratio for women) — so these multipliers are expressed RELATIVE TO
-// HISPANIC, same gender, not relative to white men, specifically so
-// `race: 'latino'` reproduces the archetype's existing tested numbers
-// exactly (multiplier 1.0) rather than silently changing them.
-const RACE_INCOME_MULTIPLIER = {
-  male: {
-    white: 1342 / 991,
-    black: 1017 / 991,
-    latino: 1,
-    asian: 1822 / 991,
-  },
-  female: {
-    white: 1103 / 879,
-    black: 984 / 879,
-    latino: 1,
-    asian: 1455 / 879,
-  },
 };
 
 // [V] BLS, "Persons with a Disability: Labor Force Characteristics,"
@@ -71,6 +45,25 @@ const RURAL_POPULATION_SHARE = 0.20;
 // vs. urban ~$80,600 — applied as a flat income multiplier. Home-price
 // tiers are NOT adjusted for rurality in this pass (see file header).
 const RURAL_INCOME_MULTIPLIER = 66600 / 80600;
+
+// The archetype's base annualIncome (latino1986.js) is a Fresno-specific
+// figure — [V] BLS OEWS May 2025, Fresno MSA, blended entry-level
+// ~$19.89-$19.99/hr (~$41,500/yr). Until this fix, an `isRural: false`
+// (Los Angeles) roll left that Fresno-sourced number completely
+// unadjusted — the game would narrate "this family is in Los Angeles"
+// while still paying them a Fresno wage, even as it priced them against
+// LA's real $1,000,000 home-price tier. This multiplier re-bases urban
+// rolls to an LA-specific figure instead: [V] BLS OEWS, Los Angeles-Long
+// Beach-Anaheim MSA — Production Occupations mean $25.36/hr (May 2025)
+// blended with Construction Laborers mean $29.14/hr (May 2023, the most
+// recent detailed occupational table available) ≈ $27.25/hr ≈
+// $56,680/yr, the same "packing houses, construction, whatever needs
+// hands" blend IntroConversation's own flavor text describes, just
+// re-sourced to LA's labor market instead of Fresno's. [E]: blending two
+// different data years the same way the Fresno figure was already
+// blended across occupations — a documented estimate, not a single
+// clean BLS release, same as that original number.
+const URBAN_INCOME_MULTIPLIER = (56680) / 41500;
 
 // [V] BLS / Kessler Foundation nTIDE, 2024: workers with a disability
 // earn a median $50,762/yr versus $60,915 for workers without one — 83
@@ -94,6 +87,14 @@ function rollRace() {
   return weightedRoll(RACE_WEIGHTS);
 }
 
+// The roll CharacterSelectScene actually calls — constrained to races
+// with a real archetype behind them (see characters/index.js's
+// ARCHETYPE_RACE_WEIGHTS), so a player can never roll into a race with
+// no story to tell yet.
+function rollArchetypeRace() {
+  return weightedRoll(ARCHETYPE_RACE_WEIGHTS);
+}
+
 function rollDisability(race) {
   const rate = DISABILITY_RATE_BY_RACE[race] ?? DISABILITY_RATE_BY_RACE.latino;
   return Math.random() < rate;
@@ -104,18 +105,24 @@ function rollRurality() {
 }
 
 // Applied once, at character creation, on top of whatever the archetype
-// + gender selection already set GameState.annualIncome to.
+// + gender selection already set GameState.annualIncome to. No race
+// multiplier anymore — race-specific pay now comes from WHICH
+// archetype's own genders table got used (rolled before this runs, see
+// rollArchetypeRace()), not a multiplier stacked on Latino's number.
 function applyIncomeModifiers(state) {
-  const raceMultiplier = RACE_INCOME_MULTIPLIER[state.character]?.[state.race] ?? 1;
-  const ruralMultiplier = state.isRural ? RURAL_INCOME_MULTIPLIER : 1;
+  // Rural stays a straight rural/urban discount on the archetype's base
+  // (unchanged); urban re-bases that same base to a real LA figure
+  // instead of leaving it untouched — see URBAN_INCOME_MULTIPLIER above.
+  const settingMultiplier = state.isRural ? RURAL_INCOME_MULTIPLIER : URBAN_INCOME_MULTIPLIER;
   const disabilityMultiplier = state.hasDisability ? DISABILITY_INCOME_MULTIPLIER : 1;
-  state.annualIncome = Math.round(state.annualIncome * raceMultiplier * ruralMultiplier * disabilityMultiplier);
+  state.annualIncome = Math.round(state.annualIncome * settingMultiplier * disabilityMultiplier);
 }
 
-// Rolls all three and applies their income effects — the single entry
-// point CharacterSelectScene calls after setting gender/archetype income.
+// Rolls disability + rurality and applies every income effect —
+// CharacterSelectScene calls this after gender/archetype income are set.
+// state.race is already set by then (rollArchetypeRace(), called before
+// archetype selection itself) — this does NOT re-roll it.
 function rollAndApply(state) {
-  state.race = rollRace();
   state.hasDisability = rollDisability(state.race);
   state.isRural = rollRurality();
   applyIncomeModifiers(state);
@@ -123,12 +130,13 @@ function rollAndApply(state) {
 
 export default {
   RACE_WEIGHTS,
-  RACE_INCOME_MULTIPLIER,
   DISABILITY_RATE_BY_RACE,
   RURAL_POPULATION_SHARE,
   RURAL_INCOME_MULTIPLIER,
+  URBAN_INCOME_MULTIPLIER,
   DISABILITY_INCOME_MULTIPLIER,
   rollRace,
+  rollArchetypeRace,
   rollDisability,
   rollRurality,
   applyIncomeModifiers,

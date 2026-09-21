@@ -16,7 +16,13 @@ const paths = [
     ],
     source: '[V] BLS median weekly earnings, 2024; Georgetown CEW lifetime earnings by education; average bachelor’s debt, 2025 data',
     continueLabel: 'Go to Fresno City College',
-    nextScene: 'ComingOfAge',
+    // ComingOfAge is Latino-archetype-specific (the DREAM Act narrative)
+    // — a real gap found while building black-1986: the college path's
+    // downstream content (ComingOfAge, DACA) was never actually
+    // archetype-agnostic the way DemographicContext-onward is. Skip
+    // straight to CollegeTest for any archetype without an immigration-
+    // status circumstance to narrate there.
+    nextScene: (state) => (state.archetypeId === 'latino-1986' ? 'ComingOfAge' : 'CollegeTest'),
     previousScene: 'Downtown',
     onContinue: (state) => { state.pathTaken = 'college'; },
   },

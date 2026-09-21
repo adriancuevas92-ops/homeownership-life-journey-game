@@ -1,3 +1,5 @@
+import GameState from '../systems/GameState.js';
+
 // Text only, no illustration — same convention as SpecialCircumstanceScene:
 // a title card the player sits with and dismisses themselves. This is the
 // last "kitchen table" cutaway (Phaser Technical Architecture doc's
@@ -9,11 +11,37 @@
 // its own 1991 scene — there's no chronological slot for that in the
 // current game (nothing covers childhood/adolescence before ComingOfAge),
 // so it's folded in here instead of being dropped.
-const REFLECTION_TEXT = [
-  "The wage that finally moved in 1991 never made up for the nine years it didn't.",
-  "The tax code has favored homeowners since 1986. Every year spent renting instead of owning was a year that policy worked against this family, not for it. And however carefully they've kept their accounts, saving still doesn't count the same everywhere.",
-  "None of that is the reason you haven't gotten here yet. It's the weather you did it in.",
-].join('\n\n');
+//
+// Found live during a narrative audit (2026-09-21): this was one fixed
+// string shown to every archetype, including the line "policy worked
+// against this family... saving still doesn't count the same
+// everywhere" — true for latino-1986/black-1986/asian-1986 (each
+// carries a real credit-access or savings-rate penalty), but flatly
+// false for white-1986, which CircumstanceOriginWhite already told this
+// same player, screens earlier, carries NO extra penalty on purpose
+// ("No line just executed to make this harder... that absence is
+// itself real, documented history"). One scene said the system worked
+// against this family; this one said the opposite. Split into a
+// default (unchanged, still accurate for the other three) and a
+// white-1986 variant that keeps the one genuinely universal fact (the
+// wage freeze, a Baseline1 condition every archetype carries) and
+// replaces the credit-access line with what's actually true here.
+const REFLECTION_TEXT_BY_ARCHETYPE = {
+  // Kept close to the default's own length on purpose (see below) —
+  // this text block sits in a fixed layout with "press SPACE" pinned
+  // below it; a first draft ran noticeably longer than the default and
+  // visibly overlapped that line.
+  'white-1986': [
+    "The wage that finally moved in 1991 never made up for the nine years it didn't — same as it did for every family in this game.",
+    "The tax code has favored homeowners since 1986, same as it has for everyone here. What's different for this family is what else never happened: no steered loan, no locked door, nothing extra working against them in the background.",
+    "None of that is the reason you haven't gotten here yet. It's the weather everyone did this in — just without the extra front most families here also had to walk through.",
+  ].join('\n\n'),
+  default: [
+    "The wage that finally moved in 1991 never made up for the nine years it didn't.",
+    "The tax code has favored homeowners since 1986. Every year spent renting instead of owning was a year that policy worked against this family, not for it. And however carefully they've kept their accounts, saving still doesn't count the same everywhere.",
+    "None of that is the reason you haven't gotten here yet. It's the weather you did it in.",
+  ].join('\n\n'),
+};
 
 class KitchenTablePreEndingScene extends Phaser.Scene {
   constructor() {
@@ -36,7 +64,8 @@ class KitchenTablePreEndingScene extends Phaser.Scene {
     // three paragraphs, taller than SpecialCircumstanceScene's two, and a
     // center-anchored block that tall pushed its first line up into the
     // title above it.
-    this.add.text(width / 2, height * 0.26, REFLECTION_TEXT, {
+    const reflectionText = REFLECTION_TEXT_BY_ARCHETYPE[GameState.archetypeId] || REFLECTION_TEXT_BY_ARCHETYPE.default;
+    this.add.text(width / 2, height * 0.26, reflectionText, {
       fontFamily: 'Georgia, serif',
       fontSize: '17px',
       color: '#e8e4d8',
@@ -70,7 +99,11 @@ class KitchenTablePreEndingScene extends Phaser.Scene {
     // office, then entering it is what actually triggers Ending. Spawn
     // at the left edge so there's an actual walk to the door, same
     // enterFrom convention every screen-to-screen edge transition uses.
-    this.scene.start('Realty', { enterFrom: 'left' });
+    // Which office depends on the same rolled setting Synopsis's SETTING
+    // rule and Ending's home-price tier already use — Fresno stays
+    // Fresno, everyone else lands in the Los Angeles storefront.
+    const destination = GameState.isRural ? 'Realty' : 'RealtyLA';
+    this.scene.start(destination, { enterFrom: 'left' });
   }
 }
 

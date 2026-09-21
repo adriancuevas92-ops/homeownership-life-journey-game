@@ -1,4 +1,5 @@
 import DialogueBubble from '../ui/DialogueBubble.js';
+import GameState from '../systems/GameState.js';
 
 const LINE_PAUSE_MS = 900;
 const BEAT_PAUSE_MS = 1400;
@@ -22,6 +23,14 @@ class ConversationScene extends Phaser.Scene {
         this.load.image(beat.backdrop, `assets/images/${beat.backdrop}.png`);
       }
     });
+  }
+
+  // A beat with a `when: (state) => boolean` field only plays when it
+  // returns true — same convention ComicScene's steps use — so one
+  // shared scene (e.g. KitchenTable2008) can carry a different beat per
+  // archetype instead of needing a whole separate scene/key.
+  _isBeatActive(beat) {
+    return !beat.when || beat.when(GameState);
   }
 
   create() {
@@ -54,9 +63,13 @@ class ConversationScene extends Phaser.Scene {
   }
 
   _advanceBeat() {
-    this.beatIndex += 1;
+    do {
+      this.beatIndex += 1;
+    } while (this.config.beats[this.beatIndex] && !this._isBeatActive(this.config.beats[this.beatIndex]));
+
     if (this.beatIndex >= this.config.beats.length) {
-      this.scene.start(this.config.nextScene);
+      const next = typeof this.config.nextScene === 'function' ? this.config.nextScene(GameState) : this.config.nextScene;
+      this.scene.start(next);
       return;
     }
     const beat = this.config.beats[this.beatIndex];

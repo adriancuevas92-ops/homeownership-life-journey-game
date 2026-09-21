@@ -47,10 +47,18 @@ function shuffle(array) {
   return copy;
 }
 
+// The bank's own comment says "shuffled for presentation" — this is that
+// half of it. shuffle() above only ever reordered which questions were
+// drawn; `answer` is matched by value in scoreTest(), never by index, so
+// shuffling each question's own choices doesn't touch scoring.
+function shuffleChoices(question) {
+  return { ...question, choices: shuffle(question.choices) };
+}
+
 // `bank` injected, same reasoning as SchoolTest/CollegeTest.
 function buildTest(state, bank) {
   const tier = computeTier(state);
-  return { tier, questions: shuffle(bank[tier]) };
+  return { tier, questions: shuffle(bank[tier]).map(shuffleChoices) };
 }
 
 function scoreTest(test, answers) {

@@ -13,12 +13,11 @@ class CollegeTestScene extends Phaser.Scene {
   }
 
   create() {
-    this.attemptNumber = 1;
     this._startTest();
   }
 
   _startTest() {
-    this.threshold = CollegeTest.computeThresholdForAttempt(GameState, this.attemptNumber);
+    this.threshold = CollegeTest.computeThresholdForAttempt(GameState, GameState.collegeTestAttemptNumber);
     this.test = CollegeTest.buildTest(BANK);
     this.currentIndex = 0;
     this.answers = [];
@@ -42,7 +41,7 @@ class CollegeTestScene extends Phaser.Scene {
 
     this.add.text(
       width / 2, 68,
-      `Attempt ${this.attemptNumber} — need ${this.threshold} of ${CollegeTest.QUESTION_COUNT} to pass`,
+      `Attempt ${GameState.collegeTestAttemptNumber} — need ${this.threshold} of ${CollegeTest.QUESTION_COUNT} to pass`,
       { fontFamily: 'Georgia, serif', fontSize: '13px', color: '#777777' },
     ).setOrigin(0.5);
 
@@ -118,14 +117,14 @@ class CollegeTestScene extends Phaser.Scene {
       ).setOrigin(0.5, 0);
       this._makeButton(width / 2, height * 0.62, 'Continue', () => this.scene.start('KitchenTable2008'));
     } else {
-      const nextThreshold = CollegeTest.computeThresholdForAttempt(GameState, this.attemptNumber + 1);
+      const nextThreshold = CollegeTest.computeThresholdForAttempt(GameState, GameState.collegeTestAttemptNumber + 1);
       this.add.text(
         width / 2, height * 0.36,
         `Next attempt, you'll only need ${nextThreshold} of ${CollegeTest.QUESTION_COUNT} — persistence counts here too.`,
         { fontFamily: 'Georgia, serif', fontSize: '14px', color: '#666666', align: 'center', wordWrap: { width: 500 } },
       ).setOrigin(0.5, 0);
       this._makeButton(width / 2, height * 0.58, 'Try Again', () => {
-        this.attemptNumber += 1;
+        GameState.collegeTestAttemptNumber += 1;
         this._startTest();
       });
     }

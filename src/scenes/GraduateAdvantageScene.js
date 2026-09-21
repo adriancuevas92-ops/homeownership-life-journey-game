@@ -4,9 +4,18 @@
 // the graduation test, before anything about adulthood or the three life
 // paths, land what a diploma alone is actually worth in the numbers this
 // game already scores.
+// Found live during a narrative audit (2026-09-21): this line used to
+// read "adds another 10 points on top of a dropout's odds — 3 more on
+// top of a diploma alone," which states two different bachelor's-degree
+// rates from the same sentence (23.0+10=33.0 vs. 32.3+3=35.3, a 2.3-
+// point contradiction visible to anyone who does the arithmetic).
+// DropoutDisadvantageScene's mirror of this same fact never had the
+// problem — it only ever compares bachelor's-to-dropout, never chains a
+// second delta through diploma-alone — so this is rewritten to match
+// that same non-contradictory structure instead of inventing a new one.
 const STATS_TEXT = [
   'Householders with a high school diploma: 32.3% own their home. Without one: 23.0%.',
-  "A bachelor's degree adds another 10 points on top of a dropout's odds — 3 more on top of a diploma alone.",
+  "A bachelor's degree adds another 10 points on top of a dropout's odds. The diploma you just earned already accounts for about 9 of those — the rest is still ahead of you.",
   "None of the choices ahead undo the disadvantages already stacked against you. They just set how steep the next climb is.",
 ].join('\n\n');
 

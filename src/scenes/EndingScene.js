@@ -101,9 +101,14 @@ class EndingScene extends Phaser.Scene {
     } else {
       this.add.text(
         width / 2, y,
-        "Not yet, and that's the whole hand — college, the career move, the jackpot shot, all spent. The median first-time homebuyer bought their first home at 29 in 1981. That held roughly flat for forty years, then jumped to 40 by 2025. You're now 39-44.",
+        "Not yet, and that's the whole hand — college, the career move, the jackpot shot, all spent. The median first-time homebuyer bought their first home at 29 in 1981. That held roughly flat for forty years, then jumped to 40 by 2025 — the same stretch this run just lived through.",
         { fontFamily: 'Georgia, serif', fontSize: '14px', color: '#444444', align: 'center', wordWrap: { width: 580 }, lineSpacing: 6 },
       ).setOrigin(0.5, 0);
+      // Found live during a player audit (2026-09-21): this was a real
+      // dead end — no button anywhere on this screen, and the only way
+      // out was a manual refresh, which then hits the resume prompt
+      // instead of a clean new run. Same fix as the win state below.
+      this._makeButton(width / 2, height - 40, 'Play again', () => this.scene.start('CharacterSelect'));
     }
   }
 
@@ -121,9 +126,14 @@ class EndingScene extends Phaser.Scene {
     ).setOrigin(0.5);
     this.add.text(
       width / 2, height * 0.7,
-      "The median first-time homebuyer bought their first home at 29 in 1981.\nThat held roughly flat for forty years, then jumped to 40 by 2025.\nYou got there at 39-44.",
+      "The median first-time homebuyer bought their first home at 29 in 1981.\nThat held roughly flat for forty years, then jumped to 40 by 2025 —\nthe same stretch this run just lived through.",
       { fontFamily: 'Georgia, serif', fontSize: '13px', color: '#888888', align: 'center' },
     ).setOrigin(0.5);
+    // Found live during a player audit (2026-09-21): reaching this
+    // screen was a genuine dead end — no button, no acknowledged "the
+    // end" state, just a manual refresh away from the resume prompt
+    // instead of a clean new run.
+    this._makeButton(width / 2, height * 0.85, 'Play again', () => this.scene.start('CharacterSelect'));
   }
 
   _makeButton(x, y, label, onClick, fillColor = 0xf4ecd8) {

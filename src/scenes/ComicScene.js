@@ -40,12 +40,27 @@ class ComicScene extends Phaser.Scene {
     this.input.on('pointerdown', () => this._onPointerDown());
 
     if (data && data.startAtEnd) {
-      this.stepIndex = this.config.steps.length - 1;
+      this.stepIndex = this._lastActiveIndex();
       this._enterStep(this.stepIndex);
     } else {
       this.stepIndex = -1;
       this._advance();
     }
+  }
+
+  // A step with a `when: (state) => boolean` field only plays for
+  // playthroughs where it returns true — e.g. Baseline1's amnesty-era
+  // content only applies to the Latino archetype; a Black-archetype
+  // sibling step covers the same beat differently. Steps with no `when`
+  // always play, same as before this existed.
+  _isStepActive(step) {
+    return !step.when || step.when(GameState);
+  }
+
+  _lastActiveIndex() {
+    let idx = this.config.steps.length - 1;
+    while (idx >= 0 && !this._isStepActive(this.config.steps[idx])) idx -= 1;
+    return idx;
   }
 
   _buildBackButton() {
@@ -73,8 +88,10 @@ class ComicScene extends Phaser.Scene {
       this.captionBox.skipToEnd();
       return;
     }
-    if (this.stepIndex > 0) {
-      this.stepIndex -= 1;
+    let idx = this.stepIndex - 1;
+    while (idx >= 0 && !this._isStepActive(this.config.steps[idx])) idx -= 1;
+    if (idx >= 0) {
+      this.stepIndex = idx;
       this._enterStep(this.stepIndex);
     } else if (this.config.previousScene) {
       this.scene.start(this.config.previousScene, { startAtEnd: true });
@@ -82,11 +99,19 @@ class ComicScene extends Phaser.Scene {
   }
 
   _advance() {
-    this.stepIndex += 1;
+    do {
+      this.stepIndex += 1;
+    } while (this.config.steps[this.stepIndex] && !this._isStepActive(this.config.steps[this.stepIndex]));
+
     const step = this.config.steps[this.stepIndex];
 
     if (!step) {
-      this.scene.start(this.config.nextScene);
+      // `nextScene` may be a function of GameState too — lets a shared
+      // scene (Baseline3) route to a different archetype's own next
+      // scene (IntroConversation vs IntroConversationBlack) at the one
+      // seam where their stories actually diverge.
+      const next = typeof this.config.nextScene === 'function' ? this.config.nextScene(GameState) : this.config.nextScene;
+      this.scene.start(next);
       return;
     }
 
@@ -98,19 +123,40 @@ class ComicScene extends Phaser.Scene {
     let text = this.resolvedText[index];
 
     if (text === undefined) {
+      // Keyed by scene + step, not just step index within this instance —
+      // survives a full scene teardown/rebuild (see GameState.stepOutcomes'
+      // own comment for why that distinction matters: `this.resolvedText`
+      // alone only guarantees "runs once" for as long as THIS instance
+      // stays alive, which backing all the way out and returning defeats).
+      const stepKey = `${this.config.key}:${index}`;
       if (step.type === 'roll') {
-        const result = step.roll(GameState);
-        text = result.disrupted ? step.fail : step.success;
+        let outcome = GameState.stepOutcomes[stepKey];
+        if (!outcome) {
+          const result = step.roll(GameState);
+          outcome = result.disrupted ? 'fail' : 'success';
+          GameState.stepOutcomes[stepKey] = outcome;
+        }
+        text = outcome === 'fail' ? step.fail : step.success;
       } else if (step.type === 'effect') {
         // Deterministic, not a chance roll — for a structural/policy fact
         // that applies to every playthrough the same way (e.g. a tax-code
-        // change), not an individual household's luck. Applied once and
-        // cached same as a roll, so navigating back never re-applies it.
-        step.apply(GameState);
+        // change), not an individual household's luck. `apply()` itself
+        // only ever runs once per playthrough now (see stepKey above);
+        // `text` still resolves fresh every visit since it's often a
+        // function of state unrelated to the effect's own outcome.
+        if (!GameState.stepOutcomes[stepKey]) {
+          step.apply(GameState);
+          GameState.stepOutcomes[stepKey] = 'applied';
+        }
         text = step.text;
       } else {
         text = step.text;
       }
+      // `text` may be a plain string or a function of GameState, same
+      // convention pathConsequences.js already uses — lets a step read
+      // back demographics rolled at CharacterSelect (race/isRural/
+      // hasDisability are all set before Baseline1 ever starts).
+      if (typeof text === 'function') text = text(GameState);
       this.resolvedText[index] = text;
     }
 

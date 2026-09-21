@@ -4,8 +4,8 @@
     {
       "name": "homeownership-game",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8458"],
-      "port": 8458
+      "runtimeArgs": ["-m", "http.server", "8468"],
+      "port": 8468
     }
   ]
 }
