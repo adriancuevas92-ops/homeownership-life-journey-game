@@ -1,4 +1,5 @@
 import { LOCATIONS, TIER1_IDS, unlockedTiers, isLocked } from './locations.js';
+import { IMAGES } from './images.js';
 
 const STORAGE_KEY = 'quiet-losses-investigation-v1';
 const board = document.getElementById('board');
@@ -90,26 +91,18 @@ function renderLocation(id) {
     ? loc.cards.map(c => `<div class="card"><h3>${c.h}</h3><p>${c.p}</p></div>`).join('')
     : '<p><em>El contenido educativo de esta sección irá aquí cuando se produzca el segmento.</em></p>';
 
-  const videoSlot = `<div class="video-slot"><video controls playsinline preload="metadata" src="videos/${loc.id}.mp4"></video></div>`;
+  const img = IMAGES[loc.id];
+  const figure = img
+    ? `<figure class="loc-image"><img src="${img.src}" alt="${loc.title}"><figcaption>${img.credit}</figcaption></figure>`
+    : '';
 
   board.innerHTML = `
     <button class="back-btn">&larr; Volver al expediente</button>
     <h2>${loc.title}</h2>
     <div class="subtitle">${loc.subtitle}</div>
-    ${videoSlot}
+    ${figure}
     <div class="location-body">${body}</div>
   `;
-
-  const video = board.querySelector('.video-slot video');
-  if (video) {
-    video.addEventListener('error', () => {
-      video.closest('.video-slot').outerHTML = `
-        <div class="video-slot">
-          <div class="play-icon"></div>
-          <div class="placeholder-label">VIDEO AÚN NO PRODUCIDO</div>
-        </div>`;
-    });
-  }
 
   board.querySelector('.back-btn').addEventListener('click', () => {
     window.location.hash = '#hub';
